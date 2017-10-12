@@ -32,3 +32,22 @@ func withData(d *mgo.Session, fn http.HandlerFunc) http.HundlerFunc {
 		fn(w, r)
 	}
 }
+
+// var変数のセットアップとクリーンアップを行うメソッド
+// ハンドラをこの関数でラップすることで、セットアップなどについて心配する必要がない
+func withVars(fn http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		OpenVars(r)
+		defer CloseVars(r)
+		fn(w, r)
+	}
+}
+
+// CORSを使うためのラッパー
+func withCORS(fn http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Expose-Headers", "Location")
+		fn(w, r)
+	}
+}
