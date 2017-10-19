@@ -1,9 +1,30 @@
 package main
 
-import mgo "gopkg.in/mgo.v2"
+import (
+	"flag"
+	"time"
+
+	mgo "gopkg.in/mgo.v2"
+)
 
 func main() {
-
+	// デフォルトのコマンドライン引数
+	var (
+		addr  = flag.String("addr", ":8080", "エンドポイントのアドレス")
+		mongo = flag.String("mongo", "localhost", "MongoDBのアドレス")
+	)
+	flag.Parse()
+	log.Println("MongoDBに接続する", *mongo)
+	db, err := mongo.Dial(*mongo)
+	if err != nil {
+		log.Fatalln("MongoDBへの接続に失敗しました:", err)
+	}
+	defer db.Close()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/poll", withCORS(withVars(withData(db, withAPIKey(handlePolls)))))
+	log.Println("Webサーバを開始します：", *addr)
+	graceful.Run(*addr, 1*time.Second, mux)
+	log.Pringln("停止します...")
 }
 
 // リクエストハンドラをラップし、その中でAPIキーを確認している。
