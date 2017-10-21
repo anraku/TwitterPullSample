@@ -2,6 +2,9 @@ package main
 
 import (
 	"flag"
+	"gopkg.in/tylerb/graceful.v1"
+	"log"
+	"net/http"
 	"time"
 
 	mgo "gopkg.in/mgo.v2"
@@ -15,21 +18,21 @@ func main() {
 	)
 	flag.Parse()
 	log.Println("MongoDBに接続する", *mongo)
-	db, err := mongo.Dial(*mongo)
+	db, err := mgo.Dial(*mongo)
 	if err != nil {
 		log.Fatalln("MongoDBへの接続に失敗しました:", err)
 	}
 	defer db.Close()
 	mux := http.NewServeMux()
-	mux.HandleFunc("/poll", withCORS(withVars(withData(db, withAPIKey(handlePolls)))))
+	mux.HandleFunc("/polls/", withCORS(withVars(withData(db, withAPIKey(handlePolls)))))
 	log.Println("Webサーバを開始します：", *addr)
 	graceful.Run(*addr, 1*time.Second, mux)
-	log.Pringln("停止します...")
+	log.Println("停止します...")
 }
 
 // リクエストハンドラをラップし、その中でAPIキーを確認している。
 // 正しいkeyがセットされていなければ不正なエラーとみなす
-func withAPIKey(fn http.HandleFunc) http.Handler {
+func withAPIKey(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !isValidAPIKey(r.URL.Query().Get("key")) {
 			respondErr(w, r, http.StatusUnauthorized, "不正なAPIキーです")
@@ -41,11 +44,11 @@ func withAPIKey(fn http.HandleFunc) http.Handler {
 
 // リクエストのクエリに正しいAPIキーがあるか判定
 func isValidAPIKey(key string) bool {
-	return "abc"
+	return key == "abc"
 }
 
 // DBのセッションをmapにコピーし、DBのセッションを閉じる
-func withData(d *mgo.Session, fn http.HandlerFunc) http.HundlerFunc {
+func withData(d *mgo.Session, fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		thisDb := d.Copy()
 		defer thisDb.Close()

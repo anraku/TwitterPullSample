@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -22,7 +23,7 @@ func respond(w http.ResponseWriter, r *http.Request, status int, data interface{
 }
 
 func respondErr(w http.ResponseWriter, r *http.Request, status int, args ...interface{}) {
-	return respond(w, r, status, map[string]interface{}{
+	respond(w, r, status, map[string]interface{}{
 		"error": map[string]interface{}{
 			"message": fmt.Sprint(args...),
 		},
@@ -30,5 +31,5 @@ func respondErr(w http.ResponseWriter, r *http.Request, status int, args ...inte
 }
 
 func respondHTTPErr(w http.ResponseWriter, r *http.Request, status int) {
-	responsErr(w, r, status, http.StatusText(status))
+	respondErr(w, r, status, http.StatusText(status))
 }

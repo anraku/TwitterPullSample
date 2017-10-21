@@ -8,7 +8,7 @@ import (
 var (
 	// 外部からのデータベースセッションをmapで管理する
 	// 複数のクライアントから変更されるのでMutexで排他制御を行う
-	varsLock sync.Mutex
+	varsLock sync.RWMutex
 	vars     map[*http.Request]map[string]interface{}
 )
 
@@ -31,7 +31,7 @@ func CloseVars(r *http.Request) {
 
 // mapから値を取り出す関数
 // RLock()は他のコードのRLock()をブロックしない
-func GetVar(r *http.Request, key string) {
+func GetVar(r *http.Request, key string) interface{} {
 	varsLock.RLock()
 	value := vars[r][key]
 	varsLock.RUnlock()
